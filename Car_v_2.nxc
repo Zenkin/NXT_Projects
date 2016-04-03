@@ -3,56 +3,56 @@
 #define DEG2RAD PI/180
 #define LEFT OUT_C
 #define RIGHT OUT_B
+#define CRS 30
+#define CLS 30
 
-int RIGHT_SENSOR, LEFT_SENSOR;
+int RIGHT_SENSOR, LEFT_SENSOR, R_DELTA, L_DELTA, DELTA, NEED_DIST;
+int rotA, rotB, pwm_left, pwm_right;
+int base_speed = 50;
+float bearing, relative_bearing, path, prev_path = 0, deltha_path;
+float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
+float x_ref = 1, y_ref = 1; //координаты точки назначения
+float k = 20, error = 0.05;
+bool FLAG = false;
 
-void ChekSensor(void);
+void CheckSensor(void);
+void CheckRot(void);
+void DistanceTraveled(void);
+void LionInThePath(void);
+void CoastIsClear(void);
 
 task main(void)
 {
-     int rotA, rotB, pwm_left, pwm_right;
-     int base_speed = 50;
-     float bearing, relative_bearing, path, prev_path = 0, deltha_path;
-     float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
-     float x_ref = 1, y_ref = 1; //координаты точки назначения
-     float k = 20, error = 0.05;
      Wait(50);
-
      while (true)
      {
-          //снятие показаний с энкодеров
-          rotA = MotorRotationCount(LEFT);
-          rotB = MotorRotationCount(RIGHT);
-
-          //расчет пути пройденного центром робота и угла его поворота
-          path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
-          bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
-
-          //путь пройденный за один цикл программы
-          deltha_path = path - prev_path;
-          //сохранение предыдущего значения длины пути
-          prev_path = path;
-
-          //вычисление координаты X и Y
-          x_coord = x_coord + deltha_path * cos(bearing);
-          y_coord = y_coord + deltha_path * sin(bearing);
-          //вычисление отклонения по X и Y
-          delta_x = x_ref - x_coord;
-          delta_y = y_ref - y_coord;
-
-          azimuth = atan2(delta_y, delta_x); //расчет пеленга
-          relative_bearing = azimuth - bearing; //расчет относительного курсового угла
-          if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
-          //разворот по кратчайшему углу
-
-          control = k * relative_bearing ; //расчет управляющего воздействия
-          pwm_left =  base_speed + control; //преобразование управления из float в integer
-          pwm_right =  base_speed - control; //преобразование управления из float в integer
-          if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100; //насыщение управляющего воздействия
-          if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100; //насыщение управляющего воздействия
-          OnFwd(LEFT, pwm_left); //подача управления
-          OnFwd(RIGHT, pwm_right); //подача управления
-
+          CheckSensor();
+          CheckRot();
+          DistanceTraveled();
+          
+          //определяем расстояние до объекта
+          if (RIGHT_SENSOR < CRS)
+          {
+               FLAG = true; //видим препятствие
+               R_DELTA = abs(CRS - RIGHT_SENSOR);
+          }
+          if (LEFT_SENSOR < CLS)
+          {
+               FLAG = true; //видим препятствие
+               L_DELTA = abs(CLS - LEFT_SENSOR);
+          }
+          
+          if (FLAG)
+          {
+               //объезд
+               LionInThePath();
+          }
+          else
+          {
+               CoastIsClear();
+          }
+          
+          FLAG = false;
           if((abs(x_ref - x_coord)<error)&(abs(y_ref - y_coord)<error))
           {
                break; //выход при достижении области точки
@@ -60,8 +60,74 @@ task main(void)
      }
 }
 
-void ChekSensor(void)
+void CheckSensor(void)
 {
+     //снятие показаний с сенсоров
      RIGHT_SENSOR = SensorUS(S1);
      LEFT_SENSOR = SensorUS(S2);
 }
+
+void CheckRot(void)
+{
+     //снятие показаний с энкодеров
+     rotA = MotorRotationCount(LEFT);
+     rotB = MotorRotationCount(RIGHT);
+}
+
+void DistanceTraveled(void)
+{
+     //расчет пути пройденного центром робота
+     path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
+     
+     //путь пройденный за один цикл программы
+     deltha_path = path - prev_path;
+     //сохранение предыдущего значения длины пути
+     prev_path = path;
+     
+     //вычисление координаты X и Y
+     x_coord = x_coord + deltha_path * cos(bearing);
+     y_coord = y_coord + deltha_path * sin(bearing);
+     
+     //вычисление отклонения по X и Y
+     delta_x = x_ref - x_coord;
+     delta_y = y_ref - y_coord;
+}
+
+void LionInThePath(void)
+{
+     DELTA = R_DELTA - L_DELTA;
+     control = sign(DELTA) * (NEED_DIST - (RIGHT_SENSOR + LEFT_SENSOR)/4);
+     pwm_right =  base_speed - control;
+     pwm_left =  base_speed + control;
+}
+
+void CoastIsClear(void)
+{
+     //расчёт угла поворота
+     bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
+
+     //расчет пеленга
+     azimuth = atan2(delta_y, delta_x);
+     
+     //расчет относительного курсового угла
+     relative_bearing = azimuth - bearing;
+     
+     //разворот по кратчайшему углу
+     if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
+     
+     //расчет управляющего воздействия
+     control = k * relative_bearing ;
+     
+     //преобразование управления из float в integer
+     pwm_left =  base_speed + control;
+     pwm_right =  base_speed - control;
+     
+     //насыщение управляющего воздействия
+     if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100;
+     if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100;
+     
+     //подача управления
+     OnFwd(LEFT, pwm_left);
+     OnFwd(RIGHT, pwm_right);
+}
+
