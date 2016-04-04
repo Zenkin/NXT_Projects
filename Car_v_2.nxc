@@ -11,7 +11,7 @@ int rotA, rotB, pwm_left, pwm_right;
 int base_speed = 50;
 float bearing, relative_bearing, path, prev_path = 0, deltha_path;
 float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
-float x_ref = 1, y_ref = 1; //êîîðäèíàòû òî÷êè íàçíà÷åíèÿ
+float x_ref = 1, y_ref = 1; //êîîðäèíàòû òî÷êè íàçíà÷åíèÿ 
 float k = 20, error = 0.05;
 bool FLAG = false;
 
