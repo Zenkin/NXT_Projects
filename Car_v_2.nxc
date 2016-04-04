@@ -11,7 +11,7 @@ int rotA, rotB, pwm_left, pwm_right;
 int base_speed = 50;
 float bearing, relative_bearing, path, prev_path = 0, deltha_path;
 float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
-float x_ref = 1, y_ref = 1; //координаты точки назначения
+float x_ref = 1, y_ref = 1; //ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» ГІГ®Г·ГЄГЁ Г­Г Г§Г­Г Г·ГҐГ­ГЁГї
 float k = 20, error = 0.05;
 bool FLAG = false;
 
@@ -24,27 +24,27 @@ void CoastIsClear(void);
 task main(void)
 {
      Wait(50);
-     while (true)
+     while (true) 
      {
           CheckSensor();
           CheckRot();
           DistanceTraveled();
           
-          //определяем расстояние до объекта
+          //Г®ГЇГ°ГҐГ¤ГҐГ«ГїГҐГ¬ Г°Г Г±Г±ГІГ®ГїГ­ГЁГҐ Г¤Г® Г®ГЎГєГҐГЄГІГ 
           if (RIGHT_SENSOR < CRS)
           {
-               FLAG = true; //видим препятствие
+               FLAG = true; //ГўГЁГ¤ГЁГ¬ ГЇГ°ГҐГЇГїГІГ±ГІГўГЁГҐ
                R_DELTA = abs(CRS - RIGHT_SENSOR);
           }
           if (LEFT_SENSOR < CLS)
           {
-               FLAG = true; //видим препятствие
+               FLAG = true; //ГўГЁГ¤ГЁГ¬ ГЇГ°ГҐГЇГїГІГ±ГІГўГЁГҐ
                L_DELTA = abs(CLS - LEFT_SENSOR);
           }
           
           if (FLAG)
           {
-               //объезд
+               //Г®ГЎГєГҐГ§Г¤
                LionInThePath();
           }
           else
@@ -55,40 +55,40 @@ task main(void)
           FLAG = false;
           if((abs(x_ref - x_coord)<error)&(abs(y_ref - y_coord)<error))
           {
-               break; //выход при достижении области точки
+               break; //ГўГ»ГµГ®Г¤ ГЇГ°ГЁ Г¤Г®Г±ГІГЁГ¦ГҐГ­ГЁГЁ Г®ГЎГ«Г Г±ГІГЁ ГІГ®Г·ГЄГЁ
           }
      }
 }
 
 void CheckSensor(void)
 {
-     //снятие показаний с сенсоров
+     //Г±Г­ГїГІГЁГҐ ГЇГ®ГЄГ Г§Г Г­ГЁГ© Г± Г±ГҐГ­Г±Г®Г°Г®Гў
      RIGHT_SENSOR = SensorUS(S1);
      LEFT_SENSOR = SensorUS(S2);
 }
 
 void CheckRot(void)
 {
-     //снятие показаний с энкодеров
+     //Г±Г­ГїГІГЁГҐ ГЇГ®ГЄГ Г§Г Г­ГЁГ© Г± ГЅГ­ГЄГ®Г¤ГҐГ°Г®Гў
      rotA = MotorRotationCount(LEFT);
      rotB = MotorRotationCount(RIGHT);
 }
 
 void DistanceTraveled(void)
 {
-     //расчет пути пройденного центром робота
+     //Г°Г Г±Г·ГҐГІ ГЇГіГІГЁ ГЇГ°Г®Г©Г¤ГҐГ­Г­Г®ГЈГ® Г¶ГҐГ­ГІГ°Г®Г¬ Г°Г®ГЎГ®ГІГ 
      path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
      
-     //путь пройденный за один цикл программы
+     //ГЇГіГІГј ГЇГ°Г®Г©Г¤ГҐГ­Г­Г»Г© Г§Г  Г®Г¤ГЁГ­ Г¶ГЁГЄГ« ГЇГ°Г®ГЈГ°Г Г¬Г¬Г»
      deltha_path = path - prev_path;
-     //сохранение предыдущего значения длины пути
+     //Г±Г®ГµГ°Г Г­ГҐГ­ГЁГҐ ГЇГ°ГҐГ¤Г»Г¤ГіГ№ГҐГЈГ® Г§Г­Г Г·ГҐГ­ГЁГї Г¤Г«ГЁГ­Г» ГЇГіГІГЁ
      prev_path = path;
      
-     //вычисление координаты X и Y
+     //ГўГ»Г·ГЁГ±Г«ГҐГ­ГЁГҐ ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» X ГЁ Y
      x_coord = x_coord + deltha_path * cos(bearing);
      y_coord = y_coord + deltha_path * sin(bearing);
      
-     //вычисление отклонения по X и Y
+     //ГўГ»Г·ГЁГ±Г«ГҐГ­ГЁГҐ Г®ГІГЄГ«Г®Г­ГҐГ­ГЁГї ГЇГ® X ГЁ Y
      delta_x = x_ref - x_coord;
      delta_y = y_ref - y_coord;
 }
@@ -103,30 +103,30 @@ void LionInThePath(void)
 
 void CoastIsClear(void)
 {
-     //расчёт угла поворота
+     //Г°Г Г±Г·ВёГІ ГіГЈГ«Г  ГЇГ®ГўГ®Г°Г®ГІГ 
      bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
 
-     //расчет пеленга
+     //Г°Г Г±Г·ГҐГІ ГЇГҐГ«ГҐГ­ГЈГ 
      azimuth = atan2(delta_y, delta_x);
      
-     //расчет относительного курсового угла
+     //Г°Г Г±Г·ГҐГІ Г®ГІГ­Г®Г±ГЁГІГҐГ«ГјГ­Г®ГЈГ® ГЄГіГ°Г±Г®ГўГ®ГЈГ® ГіГЈГ«Г 
      relative_bearing = azimuth - bearing;
      
-     //разворот по кратчайшему углу
+     //Г°Г Г§ГўГ®Г°Г®ГІ ГЇГ® ГЄГ°Г ГІГ·Г Г©ГёГҐГ¬Гі ГіГЈГ«Гі
      if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
      
-     //расчет управляющего воздействия
+     //Г°Г Г±Г·ГҐГІ ГіГЇГ°Г ГўГ«ГїГѕГ№ГҐГЈГ® ГўГ®Г§Г¤ГҐГ©Г±ГІГўГЁГї
      control = k * relative_bearing ;
      
-     //преобразование управления из float в integer
+     //ГЇГ°ГҐГ®ГЎГ°Г Г§Г®ГўГ Г­ГЁГҐ ГіГЇГ°Г ГўГ«ГҐГ­ГЁГї ГЁГ§ float Гў integer
      pwm_left =  base_speed + control;
      pwm_right =  base_speed - control;
      
-     //насыщение управляющего воздействия
+     //Г­Г Г±Г»Г№ГҐГ­ГЁГҐ ГіГЇГ°Г ГўГ«ГїГѕГ№ГҐГЈГ® ГўГ®Г§Г¤ГҐГ©Г±ГІГўГЁГї
      if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100;
      if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100;
      
-     //подача управления
+     //ГЇГ®Г¤Г Г·Г  ГіГЇГ°Г ГўГ«ГҐГ­ГЁГї
      OnFwd(LEFT, pwm_left);
      OnFwd(RIGHT, pwm_right);
 }
