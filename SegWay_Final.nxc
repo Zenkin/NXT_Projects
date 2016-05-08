@@ -1,0 +1,156 @@
+#define GYRO             IN_4
+#define LEFT_MOTOR       OUT_C
+#define RIGHT_MOTOR      OUT_B
+#define BOTH_MOTORS      OUT_BC
+#define WAIT_TIME        8
+#define KGYROANGLE       30
+#define KSPEED           1.0
+#define KGYROSPEED       7
+#define KPOS             0.5
+#define OFFSET_SAMPLES   100
+#define EMAOFFSET        0.0005
+#define TIME_FALL_LIMIT  1000
+
+float segway_angle = 0, segway_speed;
+float wheel_angle = 0, last_wheel_angle;
+float wheel_speed, max_voltage;
+float Gyro_Offset, Gyro_Value = 0;
+float d_time, last_time;
+int u, temp;
+long Control_Fall;
+
+void GetGyroOffset(void);
+void StartBeeps(void);
+void Timer(void);
+void Cheks(void);
+void SegWay_Fell(void);
+
+task main()
+{
+    SetSensorHTGyro(GYRO);
+    GetGyroOffset();
+    StartBeeps();
+    Control_Fall = CurrentTick();
+    
+    while(true)
+    {
+        Timer();
+        max_voltage = BatteryLevel() / 1000;
+        
+        Gyro_Value = SensorHTGyro(GYRO);
+        Gyro_Offset = EMAOFFSET * Gyro_Value + (1-EMAOFFSET) * Gyro_Offset;
+        segway_speed = (Gyro_Value - Gyro_Offset)*PI/180;
+        segway_angle += segway_speed * d_time;
+        
+        last_wheel_angle = wheel_angle;
+        wheel_angle = (MotorRotationCount(LEFT_MOTOR) + MotorRotationCount(RIGHT_MOTOR)) * PI / 360;
+        wheel_speed = (wheel_angle - last_wheel_angle) / d_time;
+
+
+        u = KGYROANGLE * segway_angle +
+            KGYROSPEED * segway_speed +
+            KSPEED * wheel_speed +
+            KPOS * wheel_angle;
+
+        u = u * 100 / max_voltage;
+
+        Cheks();
+
+        OnFwd(BOTH_MOTORS, u);
+        
+        if ((CurrentTick() - Control_Fall) > TIME_FALL_LIMIT)
+        {
+            break;
+        }
+        
+        Wait(WAIT_TIME);
+    }
+    SegWay_Fell();
+}
+
+void GetGyroOffset(void)
+{
+    float gSum;
+    int  i, gMin, gMax, g;
+
+    ClearScreen();
+    TextOut(0, LCD_LINE4, "Lay robot down");
+    TextOut(0, LCD_LINE5, "flat to get gyro");
+    TextOut(0, LCD_LINE6, "offset.");
+
+    Off(BOTH_MOTORS);
+
+    do
+    {
+        gSum = 0.0;
+        gMin = 1000;
+        gMax = -1000;
+        for (i = 0; i < OFFSET_SAMPLES; i++)
+        {
+            g = SensorHTGyro(GYRO);
+            if (g > gMax)
+                gMax = g;
+            if (g < gMin)
+                gMin = g;
+            gSum += g;
+            Wait(5);
+        }
+    }
+    while ((gMax - gMin) > 1);
+    Gyro_Offset = gSum / OFFSET_SAMPLES - 2.0;
+}
+
+void StartBeeps(void)
+{
+    int c;
+
+    ClearScreen();
+    TextOut(20, LCD_LINE3, "Balance in");
+
+    for (c=5; c>0;c--)
+    {
+        NumOut(47, LCD_LINE4, c);
+        PlayTone(440,100);
+        Wait(1000);
+    }
+    NumOut(47, LCD_LINE4, 0);
+    PlayTone(440,1000);
+    Wait(1000);
+}
+
+void Timer(void)
+{
+    if (temp == 0)
+    {
+        d_time = 0.0055;
+    }
+    else
+    {
+        d_time = (CurrentTick() - last_time)/1000;
+        last_time = d_time;
+        if (temp == 0)
+        {
+            temp = 1;
+        }
+    }
+}
+
+void Cheks(void)
+{
+    if (abs(u) < 100)
+    {
+        Control_Fall = CurrentTick();
+    }
+
+    if (abs(u) > 100)
+    {
+        u = sign(u) * 100;
+    }
+}
+
+void SegWay_Fell(void)
+{
+    Off(BOTH_MOTORS);
+    ClearScreen();
+    TextOut(0, LCD_LINE4, "Oops... I fell");
+}
