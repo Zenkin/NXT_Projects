@@ -4,179 +4,142 @@
 #define LEFT OUT_C
 #define RIGHT OUT_B
 
-<<<<<<< HEAD
 int RIGHT_SENSOR, LEFT_SENSOR, R_DELTA, L_DELTA, DELTA, NEED_DIST;
 int rotA, rotB, pwm_left, pwm_right;
 int base_speed = 50;
 float bearing, relative_bearing, path, prev_path = 0, deltha_path;
 float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
-float x_ref = 1, y_ref = 1; //ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» ГІГ®Г·ГЄГЁ Г­Г Г§Г­Г Г·ГҐГ­ГЁГї 
+float x_ref = 1, y_ref = 1;
 float k = 20, error = 0.05;
 bool FLAG = false;
-=======
 int RIGHT_SENSOR, LEFT_SENSOR;
->>>>>>> parent of a08c763... NXT_Project
 
 void ChekSensor(void);
+void CheckRot(void);
+void DistanceTraveled(void);
+void LionInThePath(void);
+void CoastIsClear(void);
 
-task main(void)
-{
-     int rotA, rotB, pwm_left, pwm_right;
-     int base_speed = 50;
-     float bearing, relative_bearing, path, prev_path = 0, deltha_path;
-     float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
-     float x_ref = 1, y_ref = 1; //координаты точки назначения
-     float k = 20, error = 0.05;
-     Wait(50);
-<<<<<<< HEAD
-     while (true) 
-     {
-          CheckSensor();
-          CheckRot();
-          DistanceTraveled();
+task main(void) {
+    int rotA, rotB, pwm_left, pwm_right;
+    int base_speed = 50;
+    float bearing, relative_bearing, path, prev_path = 0, deltha_path;
+    float x_coord = 0, y_coord = 0, azimuth, control,delta_x, delta_y;
+    float x_ref = 1, y_ref = 1;
+    float k = 20, error = 0.05;
+    Wait(50);
+
+    while (true) {
+
+        CheckSensor();
+        CheckRot();
+        DistanceTraveled();
           
-          //Г®ГЇГ°ГҐГ¤ГҐГ«ГїГҐГ¬ Г°Г Г±Г±ГІГ®ГїГ­ГЁГҐ Г¤Г® Г®ГЎГєГҐГЄГІГ 
-          if (RIGHT_SENSOR < CRS)
-          {
-               FLAG = true; //ГўГЁГ¤ГЁГ¬ ГЇГ°ГҐГЇГїГІГ±ГІГўГЁГҐ
-               R_DELTA = abs(CRS - RIGHT_SENSOR);
-          }
-          if (LEFT_SENSOR < CLS)
-          {
-               FLAG = true; //ГўГЁГ¤ГЁГ¬ ГЇГ°ГҐГЇГїГІГ±ГІГўГЁГҐ
-               L_DELTA = abs(CLS - LEFT_SENSOR);
-          }
+        if (RIGHT_SENSOR < CRS) {
+            FLAG = true;
+            R_DELTA = abs(CRS - RIGHT_SENSOR);
+        }
+
+		if (LEFT_SENSOR < CLS) {
+            FLAG = true;
+            L_DELTA = abs(CLS - LEFT_SENSOR);
+        }
           
-          if (FLAG)
-          {
-               //Г®ГЎГєГҐГ§Г¤
-               LionInThePath();
-          }
-          else
-          {
-               CoastIsClear();
-          }
+        if (FLAG) LionInThePath();
+        else CoastIsClear();
           
-          FLAG = false;
-=======
+        FLAG = false;
 
-     while (true)
-     {
-          //снятие показаний с энкодеров
-          rotA = MotorRotationCount(LEFT);
-          rotB = MotorRotationCount(RIGHT);
+        RIGHT_SENSOR = SensorUS(S1);
+     	LEFT_SENSOR = SensorUS(S2);
 
-          //расчет пути пройденного центром робота и угла его поворота
-          path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
-          bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
+    }
 
-          //путь пройденный за один цикл программы
-          deltha_path = path - prev_path;
-          //сохранение предыдущего значения длины пути
-          prev_path = path;
+	while (true) {
 
-          //вычисление координаты X и Y
-          x_coord = x_coord + deltha_path * cos(bearing);
-          y_coord = y_coord + deltha_path * sin(bearing);
-          //вычисление отклонения по X и Y
-          delta_x = x_ref - x_coord;
-          delta_y = y_ref - y_coord;
+        rotA = MotorRotationCount(LEFT);
+        rotB = MotorRotationCount(RIGHT);
 
-          azimuth = atan2(delta_y, delta_x); //расчет пеленга
-          relative_bearing = azimuth - bearing; //расчет относительного курсового угла
-          if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
-          //разворот по кратчайшему углу
+        path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
+        bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
 
-          control = k * relative_bearing ; //расчет управляющего воздействия
-          pwm_left =  base_speed + control; //преобразование управления из float в integer
-          pwm_right =  base_speed - control; //преобразование управления из float в integer
-          if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100; //насыщение управляющего воздействия
-          if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100; //насыщение управляющего воздействия
-          OnFwd(LEFT, pwm_left); //подача управления
-          OnFwd(RIGHT, pwm_right); //подача управления
+        deltha_path = path - prev_path;
+        prev_path = path;
 
->>>>>>> parent of a08c763... NXT_Project
-          if((abs(x_ref - x_coord)<error)&(abs(y_ref - y_coord)<error))
-          {
-               break; //ГўГ»ГµГ®Г¤ ГЇГ°ГЁ Г¤Г®Г±ГІГЁГ¦ГҐГ­ГЁГЁ Г®ГЎГ«Г Г±ГІГЁ ГІГ®Г·ГЄГЁ
-          }
-     }
+        x_coord = x_coord + deltha_path * cos(bearing);
+        y_coord = y_coord + deltha_path * sin(bearing);
+        delta_x = x_ref - x_coord;
+        delta_y = y_ref - y_coord;
+
+        azimuth = atan2(delta_y, delta_x);
+        relative_bearing = azimuth - bearing;
+        if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
+
+        control = k * relative_bearing;
+        pwm_left =  base_speed + control;
+        pwm_right =  base_speed - control;
+        if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100;
+        if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100;
+        OnFwd(LEFT, pwm_left);
+        OnFwd(RIGHT, pwm_right);
+
+        if((abs(x_ref - x_coord)<error)&(abs(y_ref - y_coord)<error)) break;
+    }
 }
 
-void ChekSensor(void)
-{
-<<<<<<< HEAD
-     //Г±Г­ГїГІГЁГҐ ГЇГ®ГЄГ Г§Г Г­ГЁГ© Г± Г±ГҐГ­Г±Г®Г°Г®Гў
+void ChekSensor(void) {
+
      RIGHT_SENSOR = SensorUS(S1);
      LEFT_SENSOR = SensorUS(S2);
+
 }
 
-void CheckRot(void)
-{
-     //Г±Г­ГїГІГЁГҐ ГЇГ®ГЄГ Г§Г Г­ГЁГ© Г± ГЅГ­ГЄГ®Г¤ГҐГ°Г®Гў
+void CheckRot(void) {
+
      rotA = MotorRotationCount(LEFT);
      rotB = MotorRotationCount(RIGHT);
 }
 
-void DistanceTraveled(void)
-{
-     //Г°Г Г±Г·ГҐГІ ГЇГіГІГЁ ГЇГ°Г®Г©Г¤ГҐГ­Г­Г®ГЈГ® Г¶ГҐГ­ГІГ°Г®Г¬ Г°Г®ГЎГ®ГІГ 
+void DistanceTraveled(void) {
+
      path = (rotA+rotB)*DEG2RAD*RAD_WHEEL/2;
      
-     //ГЇГіГІГј ГЇГ°Г®Г©Г¤ГҐГ­Г­Г»Г© Г§Г  Г®Г¤ГЁГ­ Г¶ГЁГЄГ« ГЇГ°Г®ГЈГ°Г Г¬Г¬Г»
      deltha_path = path - prev_path;
-     //Г±Г®ГµГ°Г Г­ГҐГ­ГЁГҐ ГЇГ°ГҐГ¤Г»Г¤ГіГ№ГҐГЈГ® Г§Г­Г Г·ГҐГ­ГЁГї Г¤Г«ГЁГ­Г» ГЇГіГІГЁ
      prev_path = path;
      
-     //ГўГ»Г·ГЁГ±Г«ГҐГ­ГЁГҐ ГЄГ®Г®Г°Г¤ГЁГ­Г ГІГ» X ГЁ Y
      x_coord = x_coord + deltha_path * cos(bearing);
      y_coord = y_coord + deltha_path * sin(bearing);
      
-     //ГўГ»Г·ГЁГ±Г«ГҐГ­ГЁГҐ Г®ГІГЄГ«Г®Г­ГҐГ­ГЁГї ГЇГ® X ГЁ Y
      delta_x = x_ref - x_coord;
      delta_y = y_ref - y_coord;
 }
 
-void LionInThePath(void)
-{
+void LionInThePath(void) {
+
      DELTA = R_DELTA - L_DELTA;
      control = sign(DELTA) * (NEED_DIST - (RIGHT_SENSOR + LEFT_SENSOR)/4);
      pwm_right =  base_speed - control;
      pwm_left =  base_speed + control;
 }
 
-void CoastIsClear(void)
-{
-     //Г°Г Г±Г·ВёГІ ГіГЈГ«Г  ГЇГ®ГўГ®Г°Г®ГІГ 
+void CoastIsClear(void) {
+
      bearing = (rotA-rotB)*DEG2RAD*RAD_WHEEL/BASE;
 
-     //Г°Г Г±Г·ГҐГІ ГЇГҐГ«ГҐГ­ГЈГ 
      azimuth = atan2(delta_y, delta_x);
      
-     //Г°Г Г±Г·ГҐГІ Г®ГІГ­Г®Г±ГЁГІГҐГ«ГјГ­Г®ГЈГ® ГЄГіГ°Г±Г®ГўГ®ГЈГ® ГіГЈГ«Г 
      relative_bearing = azimuth - bearing;
-     
-     //Г°Г Г§ГўГ®Г°Г®ГІ ГЇГ® ГЄГ°Г ГІГ·Г Г©ГёГҐГ¬Гі ГіГЈГ«Гі
+
      if (abs(relative_bearing) > PI) relative_bearing = relative_bearing - sign(relative_bearing) * 2 * PI;
      
-     //Г°Г Г±Г·ГҐГІ ГіГЇГ°Г ГўГ«ГїГѕГ№ГҐГЈГ® ГўГ®Г§Г¤ГҐГ©Г±ГІГўГЁГї
      control = k * relative_bearing ;
      
-     //ГЇГ°ГҐГ®ГЎГ°Г Г§Г®ГўГ Г­ГЁГҐ ГіГЇГ°Г ГўГ«ГҐГ­ГЁГї ГЁГ§ float Гў integer
      pwm_left =  base_speed + control;
      pwm_right =  base_speed - control;
      
-     //Г­Г Г±Г»Г№ГҐГ­ГЁГҐ ГіГЇГ°Г ГўГ«ГїГѕГ№ГҐГЈГ® ГўГ®Г§Г¤ГҐГ©Г±ГІГўГЁГї
      if (abs(pwm_left) > 100) pwm_left = sign(pwm_left)*100;
      if (abs(pwm_right) > 100) pwm_right = sign(pwm_right)*100;
      
-     //ГЇГ®Г¤Г Г·Г  ГіГЇГ°Г ГўГ«ГҐГ­ГЁГї
      OnFwd(LEFT, pwm_left);
      OnFwd(RIGHT, pwm_right);
 }
-
-=======
-     RIGHT_SENSOR = SensorUS(S1);
-     LEFT_SENSOR = SensorUS(S2);
-}
->>>>>>> parent of a08c763... NXT_Project
